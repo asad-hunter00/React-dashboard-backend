@@ -1,0 +1,6 @@
+{
+  "name": "Taskflow Backend API",
+  "description": "Production-ready REST API and real-time backend service for Taskflow, featuring PostgreSQL with Prisma ORM, JWT authentication, bcrypt hashing, Nodemailer OTP password reset, and Socket.IO.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

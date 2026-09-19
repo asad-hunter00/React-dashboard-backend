@@ -1,0 +1,199 @@
+// Prisma Schema for Taskflow Backend
+// Database: PostgreSQL with Prisma ORM
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  Owner
+  Admin
+  Member
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+}
+
+model User {
+  id               String             @id @default(uuid())
+  name             String
+  email            String             @unique
+  password         String
+  avatar           String?
+  role             Role               @default(Member)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  createdProjects  Project[]          @relation("ProjectCreator")
+  createdTasks     Task[]             @relation("TaskCreator")
+  assignedTasks    Task[]             @relation("TaskAssignee")
+  channelMembers   ChannelMember[]
+  messages         Message[]
+  notifications    Notification[]
+  activities       Activity[]
+  otps             PasswordResetOTP[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model PasswordResetOTP {
+  id        String   @id @default(uuid())
+  email     String
+  hashedOtp String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [email], references: [email], onDelete: Cascade)
+
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  status      ProjectStatus @default(PLANNING)
+  priority    Priority      @default(MEDIUM)
+  progress    Int           @default(0)
+  dueDate     DateTime?
+  createdBy   String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  creator     User          @relation("ProjectCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  activities  Activity[]
+
+  @@index([createdBy])
+  @@index([status])
+  @@index([priority])
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  priority    Priority   @default(MEDIUM)
+  dueDate     DateTime?
+  projectId   String?
+  assignedTo  String?
+  createdBy   String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  project     Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator     User       @relation("TaskCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  assignee    User?      @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([assignedTo])
+  @@index([createdBy])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+}
+
+model Channel {
+  id          String          @id @default(uuid())
+  name        String          @unique
+  description String?
+  isDefault   Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  members     ChannelMember[]
+  messages    Message[]
+
+  @@index([name])
+}
+
+model ChannelMember {
+  id        String   @id @default(uuid())
+  channelId String
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@index([channelId])
+  @@index([userId])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  channelId String
+  userId    String
+  message   String
+  createdAt DateTime @default(now())
+
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([channelId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+model Activity {
+  id         String   @id @default(uuid())
+  action     String
+  entityType String
+  entityId   String?
+  details    String?
+  userId     String
+  projectId  String?
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project    Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([entityType])
+  @@index([createdAt])
+}
