@@ -197,6 +197,8 @@ export class AuthController {
     try {
       const { email, otp, newPassword, confirmPassword } = req.body;
 
+      console.log("RESET BODY:", req.body);
+
       if (!email || !otp || !newPassword || !confirmPassword) {
         return sendError(
           res,
