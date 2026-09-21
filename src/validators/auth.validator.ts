@@ -25,6 +25,8 @@ export const verifyOtpSchema = z.object({
 });
 
 export const changePasswordSchema = z.object({
+  email: z.string().email('Invalid email address format'),
+  otp: z.string().length(6, 'OTP must be a 6-digit code'),
   newPassword: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string().min(1, 'Confirm password is required'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
