@@ -122,15 +122,15 @@ export class AuthController {
         return sendError(res, 'Email address is required', 400);
       }
 
+
+
       const user = await DbService.findUserByEmail(email);
       if (!user) {
-        // Return 200/success for security or clear message
-        return sendSuccess(
-          res,
-          { email },
-          'If that email exists in our system, a 6-digit verification code has been sent.'
-        );
+        return sendError(res, 'This email is not registered', 404);
       }
+
+
+
 
       // Generate 6-digit OTP
       const otp = generateSixDigitOtp();
