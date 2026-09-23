@@ -978,6 +978,62 @@ export class DbService {
     return memDb.messages.get(id) || null;
   }
 
+
+
+
+
+static async updateMessage(
+  id: string,
+  message: string
+): Promise<MessageDto | null> {
+  const prisma = getPrisma();
+
+  if (prisma) {
+    try {
+      const updatedMessage = await prisma.message.update({
+        where: { id },
+        data: {
+          message,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatar: true,
+              role: true,
+            },
+          },
+        },
+      });
+
+      return updatedMessage as MessageDto;
+    } catch (err) {
+    }
+  }
+
+  const existingMessage = memDb.messages.get(id);
+
+  if (!existingMessage) {
+    return null;
+  }
+
+  const updatedMessage: MessageDto = {
+    ...existingMessage,
+    message,
+  };
+
+  memDb.messages.set(id, updatedMessage);
+
+  return updatedMessage;
+}
+
+
+
+
+
+
   static async deleteMessage(id: string): Promise<boolean> {
     const prisma = getPrisma();
     if (prisma) {
