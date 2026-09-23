@@ -190,18 +190,20 @@ export class DbService {
     }>
   ): Promise<UserDto | null> {
     const prisma = getPrisma();
-
     if (prisma) {
-      const updated = await prisma.user.update({
-        where: { id },
-        data: {
-          ...data,
-          email: data.email ? data.email.toLowerCase() : undefined,
-        },
-      });
-
-      const { password, ...rest } = updated;
-      return rest as UserDto;
+      try {
+        const updated = await prisma.user.update({
+          where: { id },
+          data: {
+            ...data,
+            email: data.email ? data.email.toLowerCase() : undefined,
+          },
+        });
+        const { password, ...rest } = updated;
+        return rest as UserDto;
+      } catch (err) {
+        // fallback
+      }
     }
 
     const user = memDb.users.get(id);
@@ -213,9 +215,7 @@ export class DbService {
       email: data.email ? data.email.toLowerCase() : user.email,
       updatedAt: new Date(),
     };
-
     memDb.users.set(id, updatedUser);
-
     const { password, ...rest } = updatedUser;
     return rest as UserDto;
   }
@@ -982,52 +982,52 @@ export class DbService {
 
 
 
-  static async updateMessage(
-    id: string,
-    message: string
-  ): Promise<MessageDto | null> {
-    const prisma = getPrisma();
+static async updateMessage(
+  id: string,
+  message: string
+): Promise<MessageDto | null> {
+  const prisma = getPrisma();
 
-    if (prisma) {
-      try {
-        const updatedMessage = await prisma.message.update({
-          where: { id },
-          data: {
-            message,
-          },
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                avatar: true,
-                role: true,
-              },
+  if (prisma) {
+    try {
+      const updatedMessage = await prisma.message.update({
+        where: { id },
+        data: {
+          message,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatar: true,
+              role: true,
             },
           },
-        });
+        },
+      });
 
-        return updatedMessage as MessageDto;
-      } catch (err) {
-      }
+      return updatedMessage as MessageDto;
+    } catch (err) {
     }
-
-    const existingMessage = memDb.messages.get(id);
-
-    if (!existingMessage) {
-      return null;
-    }
-
-    const updatedMessage: MessageDto = {
-      ...existingMessage,
-      message,
-    };
-
-    memDb.messages.set(id, updatedMessage);
-
-    return updatedMessage;
   }
+
+  const existingMessage = memDb.messages.get(id);
+
+  if (!existingMessage) {
+    return null;
+  }
+
+  const updatedMessage: MessageDto = {
+    ...existingMessage,
+    message,
+  };
+
+  memDb.messages.set(id, updatedMessage);
+
+  return updatedMessage;
+}
 
 
 
