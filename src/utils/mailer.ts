@@ -1,12 +1,20 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD,
+  },
+});
 
 export async function sendOtpEmail(email: string, otp: string): Promise<boolean> {
   try {
-    const { data, error } = await resend.emails.send({
-      from: "Taskflow <onboarding@resend.dev>",
-      to: [email],
+    await transporter.sendMail({
+      from: `Taskflow <${process.env.SMTP_USER}>`,
+      to: email,
       subject: "Taskflow Password Reset Verification Code",
       text: `Your Taskflow 6-digit verification code is: ${otp}. This code expires in 5 minutes.`,
       html: `
@@ -29,15 +37,10 @@ export async function sendOtpEmail(email: string, otp: string): Promise<boolean>
       `,
     });
 
-    if (error) {
-      console.error("[Taskflow Resend] Failed:", error);
-      return false;
-    }
-
-    console.log(`[Taskflow Resend] OTP sent to ${email}. ID: ${data?.id}`);
+    console.log(`[Taskflow Email] OTP sent to ${email}`);
     return true;
   } catch (error) {
-    console.error("[Taskflow Resend] Error:", error);
+    console.error("[Taskflow Email] Failed:", error);
     return false;
   }
 }
